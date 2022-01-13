@@ -5,13 +5,18 @@ import "./ItemManager.sol";
 
 contract Item {
     ItemManager manager;
-    string identifier;
+    uint index;
     uint priceInWei;
-    uint balance;
 
-    constructor(ItemManager _manager, string memory _identifier, uint _priceInWei) {
+    constructor(ItemManager _manager, uint _index, uint _priceInWei) {
         manager = _manager;
-        identifier = _identifier;
+        index = _index;
         priceInWei = _priceInWei;
+    }
+
+    receive() external payable {
+        require(msg.value == priceInWei, "Item: Partial payments not accepted.");
+        (bool success, ) = address(manager).call{value: msg.value}
+            (abi.encodeWithSignature("triggerPayment(uint)", index));
     }
 }

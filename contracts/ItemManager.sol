@@ -8,6 +8,7 @@ contract ItemManager {
 
     struct SupplyItem {
         ItemManager.SupplyChainSteps _step;
+        string _identifier;
         Item _item;
     }
     mapping (uint => SupplyItem) public items;
@@ -22,7 +23,8 @@ contract ItemManager {
      */
     function createItem(string memory _identifier, uint _priceInWei) public {
         items[index]._step = SupplyChainSteps.Created;
-        items[index]._item =  new Item(this, _identifier, _priceInWei);
+        items[index]._identifier = _identifier;
+        items[index]._item =  new Item(this, index, _priceInWei);
         emit SupplyChainStepChanged(index, uint(items[index]._step), address(items[index]._item));
         index++;
     }
