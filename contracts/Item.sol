@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./ItemManager.sol";
+import { ItemManager } from  "./ItemManager.sol";
 
 contract Item {
     ItemManager manager;
-    uint public index;
-    uint public priceInWei;
-    uint public weiPaid;
+    uint index;
+    uint priceInWei;
+    uint weiPaid;
 
     constructor(ItemManager _manager, uint _index, uint _priceInWei) {
         manager = _manager;
@@ -15,6 +15,9 @@ contract Item {
         priceInWei = _priceInWei;
     }
 
+    /**
+     * @dev Calls trigger payment for item in manager.
+     */
     receive() external payable {
         require(msg.value == priceInWei, "Item: Only exact values accepted.");
         weiPaid += msg.value;
