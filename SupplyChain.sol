@@ -26,4 +26,23 @@ contract ItemManager {
         emit SupplyChainStepChanged(index, uint(items[index]._step));
         index++;
     }
+
+    /**
+     * @param _index Register index of item to trigger the payment
+     */
+    function triggerPayment(uint _index) public payable {
+        require(items[_index]._priceInWei <= msg.value, "ItemManager: Partial payments not accepted.");
+        require(items[_index]._step == SupplyChainSteps.Created, "ItemManager: Item is no longer available.");
+        items[_index]._step = SupplyChainSteps.Paid;
+        emit SupplyChainStepChanged(_index, uint(items[_index]._step));
+    }
+
+    /**
+     * @param _index Register index of item to trigger the delivery
+     */
+    function triggerDelivery(uint _index) public payable {
+        require(items[_index]._step == SupplyChainSteps.Paid, "ItemManager: Item is not paid yet.");
+        items[_index]._step = SupplyChainSteps.Delivery;
+        emit SupplyChainStepChanged(_index, uint(items[_index]._step));
+    }
 }
