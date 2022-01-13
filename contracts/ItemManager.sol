@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "./Item.sol";
+import "./Ownable.sol";
 
-contract ItemManager {
+contract ItemManager is Ownable {
     enum SupplyChainSteps { Created, Paid, Delivery } // to express state of order
 
     struct SupplyItem {
@@ -21,7 +22,7 @@ contract ItemManager {
      * @param _identifier Name of item
      * @param _priceInWei Wei price of item
      */
-    function createItem(string memory _identifier, uint _priceInWei) public {
+    function createItem(string memory _identifier, uint _priceInWei) public onlyOwner {
         items[index]._step = SupplyChainSteps.Created;
         items[index]._identifier = _identifier;
         items[index]._item =  new Item(this, index, _priceInWei);
@@ -33,6 +34,7 @@ contract ItemManager {
      * @param _index Register index of item to trigger the payment
      */
     function triggerPayment(uint _index) public payable {
+        require(msg.sender == address(items[index]._item), "ItemManager: Only items may trigger the payment");
         require(items[_index]._step == SupplyChainSteps.Created, "ItemManager: Item is no longer available.");
         items[_index]._step = SupplyChainSteps.Paid;
         emit SupplyChainStepChanged(_index, uint(items[_index]._step), address(items[index]._item));
@@ -41,7 +43,7 @@ contract ItemManager {
     /**
      * @param _index Register index of item to trigger the delivery
      */
-    function triggerDelivery(uint _index) public payable {
+    function triggerDelivery(uint _index) public payable onlyOwner {
         require(items[_index]._step == SupplyChainSteps.Paid, "ItemManager: Item is not paid yet.");
         items[_index]._step = SupplyChainSteps.Delivery;
         emit SupplyChainStepChanged(_index, uint(items[_index]._step), address(items[index]._item));
