@@ -22,7 +22,7 @@ contract Item {
         require(msg.value == priceInWei, "Item: Only exact values accepted.");
         weiPaid += msg.value;
         (bool success, ) = address(manager).call{value: msg.value}
-(abi.encodeWithSignature("triggerPayment(uint256)", index));
+            (abi.encodeWithSignature("triggerPayment(uint256)", index));
         require(success, "Item: Transaction failed.");
     }
 }
