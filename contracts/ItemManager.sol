@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { Item } from "./Item.sol";
-import "./Ownable.sol";
+import { Ownable } from  "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ItemManager is Ownable {
     enum SupplyChainSteps { Created, Paid, Delivery } // to express state of order
