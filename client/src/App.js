@@ -1,55 +1,59 @@
 import React, { useState, useEffect } from "react";
 import ItemManagerContract from "./contracts/ItemManager.json";
+import ItemContract from './contracts/Item.json';
 import getWeb3 from "./getWeb3";
 
 import "./App.css";
 
 const App = () => {
-  const [web3State, setWeb3State] = useState({ web3: null, accounts: null, contract: null })
-  const [storageValue, setStorageValue] = useState(0);
+  const [web3, setWeb3] = useState(null);
+  const [accounts, setAccounts] = useState(null);
+
+  const [itemManager, setItemManager] = useState(null);
+  const [item, setItem] = useState(null);
 
   const initializeWeb3 = async () => {
     try {
-      // Get network provider and web3 instance.
       const web3 = await getWeb3();
-
-      // Use web3 to get the user's accounts.
+      setWeb3(web3);
+      console.log('web3 ready');
       const accounts = await web3.eth.getAccounts();
-
-      // Get the contract instance.
-      const networkId = await web3.eth.net.getId();
-      const deployedNetwork = ItemManagerContract.networks[networkId];
-      const instance = new web3.eth.Contract(
-        ItemManagerContract.abi,
-        deployedNetwork && deployedNetwork.address,
-      );
-
-      setWeb3State({ web3, accounts, contract: instance });
+      setAccounts(accounts);
     } catch (error) {
       console.error(error);
     }
   }
+
+  const createInstanceOf = async (jsonContract, setter) => {
+    try {
+      const instance = new web3.eth.Contract(
+        jsonContract.abi,
+        jsonContract.networks[await web3.eth.net.getId()] && jsonContract.networks[await web3.eth.net.getId()].address,
+      );
+      setter(instance);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   useEffect(() => {
-    initializeWeb3();
+    (async () => {
+      await initializeWeb3();
+    })();
   }, [])
 
-  if (!web3State.web3) {
-    return <div>Loading Web3, accounts, and contract...</div>;
-  }
+  useEffect(() => {
+    if (web3) {
+      createInstanceOf(ItemManagerContract, setItemManager);
+      createInstanceOf(ItemContract, setItem);
+    }
+  }, [web3]);
 
   return (
     <div className="App">
-      <h1>Good to Go!</h1>
-      <p>Your Truffle Box is installed and ready.</p>
-      <h2>Smart Contract Example</h2>
-      <p>
-        If your contracts compiled and migrated successfully, below will show
-        a stored value of 5 (by default).
-      </p>
-      <p>
-        Try changing the value stored on <strong>line 42</strong> of App.js.
-      </p>
-      <div>The stored value is: {storageValue}</div>
+      <h1>Supply-chain smart contact client</h1>
+      {web3 ? <p>Web3, accounts, contract connected</p>
+        : <p>Loading Web3, accounts, and contract...</p>}
     </div>
   );
 }
