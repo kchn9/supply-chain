@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from "react";
+import ItemList from "./components/ItemList/ItemList";
+import AddItemForm from "./components/AddItemForm/AddItemForm"
+
+/**
+ * Import web3 & contracts
+ */
 import ItemManagerContract from "./contracts/ItemManager.json";
-import ItemContract from './contracts/Item.json';
+// import ItemContract from './contracts/Item.json';
 import getWeb3 from "./getWeb3";
 
+// import SupplyChainSteps from "./constants/SupplyChainSteps";
 import "./App.css";
+
 
 const App = () => {
   const [web3, setWeb3] = useState(null);
@@ -11,7 +19,6 @@ const App = () => {
 
   const [itemManager, setItemManager] = useState(null);
 
-  const [item, setItem] = useState(null);
   const [itemCost, setItemCost] = useState('');
   const [itemIdentifier, setItemIdentifier] = useState('');
 
@@ -45,17 +52,16 @@ const App = () => {
     }
     if (web3) {
       createInstanceOf(ItemManagerContract, setItemManager);
-      createInstanceOf(ItemContract, setItem);
     }
   }, [web3]);
 
-  const handleSubmit = async () => {
+  const handleItemCreation = async () => {
     try {
-      await itemManager.methods.createItem(itemIdentifier, itemCost).send({ from: accounts[0] });
+        await itemManager.methods.createItem(itemIdentifier, itemCost).send({ from: accounts[0] });
     } catch (e) {
-      console.error(e);
+        console.error(e);
     }
-  };
+};
 
   return (
     <div className="App">
@@ -64,29 +70,15 @@ const App = () => {
       {web3 ? <p>Web3, accounts, contract connected</p>
         : <p>Loading Web3, accounts, and contract...</p>}
       <h2>Items:</h2>
-      <form onSubmit={(e) => e.preventDefault()} style={{display: "flex", flexDirection: "column", width: '50%', position: 'relative', left: "50%", transform: 'translateX(-50%)'}}>
-        <label htmlFor="cost">
-          Cost in Wei:
-          <input
-            id="cost"
-            type="text"
-            value={itemCost}
-            onChange={(e) => setItemCost(e.target.value)}
-          >
-          </input>
-        </label>
-        <label htmlFor="identifier">
-          Item identifier:
-          <input
-            id="identifier"
-            type="text"
-            value={itemIdentifier}
-            onChange={(e) => setItemIdentifier(e.target.value)}
-          >
-          </input>
-        </label>
-        <button type="submit" onClick={handleSubmit}>Create new item</button>
-      </form>
+        <ItemList />
+      <h3>Add item:</h3>
+        <AddItemForm
+          onSubmit={handleItemCreation}
+          setItemCost={setItemCost}
+          itemCost={itemCost}
+          setItemIdentifier={setItemIdentifier}
+          itemIdentifier={itemIdentifier}
+        />
     </div>
   );
 }
