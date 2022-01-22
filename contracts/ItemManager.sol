@@ -15,7 +15,9 @@ contract ItemManager is Ownable {
     mapping (uint => SupplyItem) public items;
     uint index;
 
-    event SupplyChainStepChanged(uint _itemIndex, uint _step, address _itemAddress);
+    event ItemCreation(uint indexed _itemIndex, string _identifier, uint _price, uint _step, address _itemAddress);
+    event ItemPaid(uint _itemIndex, uint _step, address _itemAddress);
+    event ItemDelivery(uint _itemIndex, uint _step, address _itemAddress);
 
     /**
      * @dev Adds item to register
@@ -26,7 +28,7 @@ contract ItemManager is Ownable {
         items[index]._step = SupplyChainSteps.Created;
         items[index]._identifier = _identifier;
         items[index]._item =  new Item(this, index, _priceInWei);
-        emit SupplyChainStepChanged(index, uint(items[index]._step), address(items[index]._item));
+        emit ItemCreation(index, items[index]._identifier, uint(_priceInWei), uint(items[index]._step), address(items[index]._item));
         index++;
     }
 
@@ -37,7 +39,7 @@ contract ItemManager is Ownable {
         require(msg.sender == address(items[_index]._item), "ItemManager: Only items may trigger the payment");
         require(items[_index]._step == SupplyChainSteps.Created, "ItemManager: Item is no longer available.");
         items[_index]._step = SupplyChainSteps.Paid;
-        emit SupplyChainStepChanged(_index, uint(items[_index]._step), address(items[_index]._item));
+        emit ItemPaid(_index, uint(items[_index]._step), address(items[_index]._item));
     }
 
     /**
@@ -46,6 +48,6 @@ contract ItemManager is Ownable {
     function triggerDelivery(uint _index) public payable onlyOwner {
         require(items[_index]._step == SupplyChainSteps.Paid, "ItemManager: Item is not paid yet.");
         items[_index]._step = SupplyChainSteps.Delivery;
-        emit SupplyChainStepChanged(_index, uint(items[_index]._step), address(items[_index]._item));
+        emit ItemDelivery(_index, uint(items[_index]._step), address(items[_index]._item));
     }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import ItemList from "./components/ItemList/ItemList";
+import ItemTable from "./components/ItemTable/ItemTable";
 import AddItemForm from "./components/AddItemForm/AddItemForm"
 
 /**
@@ -9,7 +9,7 @@ import ItemManagerContract from "./contracts/ItemManager.json";
 // import ItemContract from './contracts/Item.json';
 import getWeb3 from "./getWeb3";
 
-// import SupplyChainSteps from "./constants/SupplyChainSteps";
+import SupplyChainSteps from "./constants/SupplyChainSteps";
 import "./App.css";
 
 
@@ -21,6 +21,8 @@ const App = () => {
 
   const [itemCost, setItemCost] = useState('');
   const [itemIdentifier, setItemIdentifier] = useState('');
+
+  const [items, setItems] = useState([]); // arr of item object
 
   useEffect(() => {
     const initializeWeb3 = async () => {
@@ -55,6 +57,24 @@ const App = () => {
     }
   }, [web3]);
 
+  useEffect(() => {
+    if (itemManager) {
+      itemManager.events.ItemCreation().on("data", (event) => {
+        setItems(prev => [...prev, {
+          index: event.returnValues._itemIndex,
+          identifier: event.returnValues._identifier,
+          price: event.returnValues._price,
+          step: event.returnValues._step,
+          address: event.returnValues._itemAddress
+        }]);
+      })
+    }
+  }, [itemManager]);
+
+  useEffect(() => {
+    console.log(items);
+  }, [items])
+
   const handleItemCreation = async () => {
     try {
         await itemManager.methods.createItem(itemIdentifier, itemCost).send({ from: accounts[0] });
@@ -67,10 +87,15 @@ const App = () => {
     <div className="App">
       <h1>Supply Chain Client</h1>
       <h4>(with Event Trigger)</h4>
-      {web3 ? <p>Web3, accounts, contract connected</p>
-        : <p>Loading Web3, accounts, and contract...</p>}
+      {
+        web3
+          ? <p>Web3, accounts, contract connected</p>
+          : <p>Loading Web3, accounts, and contract...</p>
+      }
       <h2>Items:</h2>
-        <ItemList />
+        <ItemTable
+          items={items}
+        />
       <h3>Add item:</h3>
         <AddItemForm
           onSubmit={handleItemCreation}
