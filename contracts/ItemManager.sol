@@ -13,9 +13,9 @@ contract ItemManager is Ownable {
         Item _item;
     }
     mapping (uint => SupplyItem) public items;
-    uint index;
+    uint public index;
 
-    event ItemCreation(uint indexed _itemIndex, string _identifier, uint _price, uint _step, address _itemAddress);
+    event ItemCreation(uint _itemIndex, string _identifier, uint _price, uint _step, address _itemAddress);
     event ItemPaid(uint _itemIndex, uint _step, address _itemAddress);
     event ItemDelivery(uint _itemIndex, uint _step, address _itemAddress);
 

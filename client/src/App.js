@@ -23,8 +23,8 @@ const App = () => {
   const [itemCost, setItemCost] = useState('');
   const [itemIdentifier, setItemIdentifier] = useState('');
 
-  const [items, setItems] = useState([]); // arr of item object
-  const [selectedItemAddress, setSelectedItemAddress] = useState(null); // arr of item object
+  const [items, setItems] = useState([]);
+  const [selectedItemAddress, setSelectedItemAddress] = useState(null);
 
   useEffect(() => {
     const initializeWeb3 = async () => {
@@ -71,6 +71,32 @@ const App = () => {
     }
   }, [itemManager]);
 
+  const refreshItems = async () => {
+    // get index -> fetch item without price -> fetch price of item -> add an item
+    try {
+      const index = await itemManager.methods.index().call();
+      const prevItems = [];
+      for (let i = 0; i < index; i++) {
+        const item = await itemManager.methods.items(i).call();
+        const itemInstance = new web3.eth.Contract(ItemContract.abi, item._item); // for fetching price
+        prevItems.push({
+          index: i,
+          identifier: item._identifier,
+          price: await itemInstance.methods.priceInWei().call(),
+          step: item._step,
+          address: item._item
+        });
+      }
+      setItems(prevItems);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    if (itemManager && web3) refreshItems();
+  }, [itemManager, web3])
+
   useEffect(() => {
     if (web3 && selectedItemAddress) {
       (() => {
@@ -79,7 +105,6 @@ const App = () => {
             ItemContract.abi,
             selectedItemAddress,
           )
-          console.log(instance);
           setItem(instance);
         } catch (error) {
           console.log(error);
@@ -94,7 +119,21 @@ const App = () => {
     } catch (e) {
         console.error(e);
     }
-};
+  };
+
+  const handleItemPayment = async () => {
+    try {
+      const value = await item.methods.priceInWei().call();
+      await web3.eth.sendTransaction({
+        from: accounts[0],
+        to: selectedItemAddress,
+        value: value,
+      })
+      await refreshItems();
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   return (
     <div className="App">
@@ -119,6 +158,7 @@ const App = () => {
         items={items}
         setSelectedItemAddress={setSelectedItemAddress}
       />
+      {item &&  <button onClick={(e) => {handleItemPayment()}} >Pay</button>}
     </div>
   );
 }

@@ -1,15 +1,5 @@
 import React, { useEffect, useRef } from "react";
 
-/*
-{
-    index: event.returnValues._itemIndex,
-    identifier: event.returnValues._identifier,
-    price: event.returnValues._price,
-    step: event.returnValues._step,
-    address: event.returnValues._itemAddress
-}
-*/
-
 const Item = ({ item, setSelectedItemAddress }) => {
     if (item) {
         return (
