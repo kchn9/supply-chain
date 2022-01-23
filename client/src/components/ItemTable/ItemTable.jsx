@@ -1,7 +1,7 @@
 import React, { defaultProps, ReactPropTypes, useState, useEffect } from "react";
 import Item from "./Item/Item.jsx";
 
-const ItemList = ({items}) => {
+const ItemList = ({ items, setSelectedItemAddress }) => {
 
     if (!items) {
         return (null);
@@ -9,17 +9,22 @@ const ItemList = ({items}) => {
 
     return (
         <>
-            <table style={{width: "100%"}}>
-                <tr>
-                    <th>Index</th>
-                    <th>Item</th>
-                    <th>Price [Wei]</th>
-                    <th>Status</th>
-                    <th>Address</th>
-                </tr>
-            {items.map(item => (
-                <Item key={item.index} item={item} />
-            ))}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Select item</th>
+                        <th>Index</th>
+                        <th>Item</th>
+                        <th>Price [Wei]</th>
+                        <th>Status</th>
+                        <th>Address</th>
+                    </tr>
+                </thead>
+                    <tbody>
+                        {items.map(item => (
+                            <Item key={item.index} item={item} setSelectedItemAddress={setSelectedItemAddress} />
+                        ))}
+                    </tbody>
             </table>
         </>
     )

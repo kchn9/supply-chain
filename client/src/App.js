@@ -6,10 +6,10 @@ import AddItemForm from "./components/AddItemForm/AddItemForm"
  * Import web3 & contracts
  */
 import ItemManagerContract from "./contracts/ItemManager.json";
-// import ItemContract from './contracts/Item.json';
+import ItemContract from './contracts/Item.json';
+
 import getWeb3 from "./getWeb3";
 
-import SupplyChainSteps from "./constants/SupplyChainSteps";
 import "./App.css";
 
 
@@ -18,11 +18,13 @@ const App = () => {
   const [accounts, setAccounts] = useState(null);
 
   const [itemManager, setItemManager] = useState(null);
+  const [item, setItem] = useState(null);
 
   const [itemCost, setItemCost] = useState('');
   const [itemIdentifier, setItemIdentifier] = useState('');
 
   const [items, setItems] = useState([]); // arr of item object
+  const [selectedItemAddress, setSelectedItemAddress] = useState(null); // arr of item object
 
   useEffect(() => {
     const initializeWeb3 = async () => {
@@ -41,19 +43,17 @@ const App = () => {
   }, [])
 
   useEffect(() => {
-    const createInstanceOf = async (jsonContract, setter) => {
+    if (web3) {
+      (async () => {
       try {
         const instance = new web3.eth.Contract(
-          jsonContract.abi,
-          jsonContract.networks[await web3.eth.net.getId()] && jsonContract.networks[await web3.eth.net.getId()].address,
+          ItemManagerContract.abi,
+          ItemManagerContract.networks[await web3.eth.net.getId()] && ItemManagerContract.networks[await web3.eth.net.getId()].address,
         );
-        setter(instance);
+        setItemManager(instance);
       } catch (error) {
         console.error(error);
-      }
-    }
-    if (web3) {
-      createInstanceOf(ItemManagerContract, setItemManager);
+      }})();
     }
   }, [web3]);
 
@@ -72,8 +72,21 @@ const App = () => {
   }, [itemManager]);
 
   useEffect(() => {
-    console.log(items);
-  }, [items])
+    if (web3 && selectedItemAddress) {
+      (() => {
+        try {
+          const instance = new web3.eth.Contract(
+            ItemContract.abi,
+            selectedItemAddress,
+          )
+          console.log(instance);
+          setItem(instance);
+        } catch (error) {
+          console.log(error);
+        }
+      })();
+    }
+  }, [web3, selectedItemAddress])
 
   const handleItemCreation = async () => {
     try {
@@ -92,18 +105,20 @@ const App = () => {
           ? <p>Web3, accounts, contract connected</p>
           : <p>Loading Web3, accounts, and contract...</p>
       }
-      <h2>Items:</h2>
-        <ItemTable
-          items={items}
-        />
       <h3>Add item:</h3>
-        <AddItemForm
-          onSubmit={handleItemCreation}
-          setItemCost={setItemCost}
-          itemCost={itemCost}
-          setItemIdentifier={setItemIdentifier}
-          itemIdentifier={itemIdentifier}
-        />
+      <p>(ItemManager <strong>owner only</strong>)</p>
+      <AddItemForm
+        onSubmit={handleItemCreation}
+        setItemCost={setItemCost}
+        itemCost={itemCost}
+        setItemIdentifier={setItemIdentifier}
+        itemIdentifier={itemIdentifier}
+      />
+      <h2>Items:</h2>
+      <ItemTable
+        items={items}
+        setSelectedItemAddress={setSelectedItemAddress}
+      />
     </div>
   );
 }
