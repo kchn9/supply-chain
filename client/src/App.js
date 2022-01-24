@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import ItemTable from "./components/ItemTable/ItemTable";
 import AddItemForm from "./components/AddItemForm/AddItemForm"
 
@@ -14,37 +14,38 @@ import "./App.css";
 
 
 const App = () => {
-  const [web3, setWeb3] = useState(null);
-  const [accounts, setAccounts] = useState(null);
-
-  const [itemManager, setItemManager] = useState(null);
-  const [item, setItem] = useState(null);
-
   const [itemCost, setItemCost] = useState('');
   const [itemIdentifier, setItemIdentifier] = useState('');
 
-  const [items, setItems] = useState([]);
-  const [selectedItemAddress, setSelectedItemAddress] = useState(null);
-
+  const [web3, setWeb3] = useState(null);
   useEffect(() => {
     const initializeWeb3 = async () => {
       try {
         const web3 = await getWeb3();
         setWeb3(web3);
-        const accounts = await web3.eth.getAccounts();
-        setAccounts(accounts);
       } catch (error) {
         console.error(error);
       }
     }
-    (async () => {
-      await initializeWeb3();
-    })();
-  }, [])
+    initializeWeb3();
+  }, []) // init web3
 
+  const [accounts, setAccounts] = useState(null);
   useEffect(() => {
-    if (web3) {
-      (async () => {
+    const fetchAccounts = async () => {
+      try {
+        const accounts = await web3.eth.getAccounts();
+        setAccounts(accounts);
+      } catch (error) {
+        console.error(error)
+      }
+    }
+    if (web3) fetchAccounts();
+  }, [web3]) // init accounts
+
+  const [itemManager, setItemManager] = useState(null);
+  useEffect(() => {
+    const createItemManager = async () => {
       try {
         const instance = new web3.eth.Contract(
           ItemManagerContract.abi,
@@ -53,26 +54,13 @@ const App = () => {
         setItemManager(instance);
       } catch (error) {
         console.error(error);
-      }})();
+      }
     }
-  }, [web3]);
+    if (web3) createItemManager();
+  }, [web3]); // init main contract
 
-  useEffect(() => {
-    if (itemManager) {
-      itemManager.events.ItemCreation().on("data", (event) => {
-        setItems(prev => [...prev, {
-          index: event.returnValues._itemIndex,
-          identifier: event.returnValues._identifier,
-          price: event.returnValues._price,
-          step: event.returnValues._step,
-          address: event.returnValues._itemAddress
-        }]);
-      })
-    }
-  }, [itemManager]);
-
-  const refreshItems = async () => {
-    // get index -> fetch item without price -> fetch price of item -> add an item
+  const [items, setItems] = useState([]);
+  const fetchPreviousItems = useCallback(async () => {
     try {
       const index = await itemManager.methods.index().call();
       const prevItems = [];
@@ -91,29 +79,44 @@ const App = () => {
     } catch (error) {
       console.log(error);
     }
-  }
-
+  }, [web3, itemManager])
   useEffect(() => {
-    if (itemManager && web3) refreshItems();
-  }, [itemManager, web3])
-
+    if (itemManager) fetchPreviousItems();
+  }, [itemManager, fetchPreviousItems]) // fetch previous items
   useEffect(() => {
-    if (web3 && selectedItemAddress) {
-      (() => {
-        try {
-          const instance = new web3.eth.Contract(
-            ItemContract.abi,
-            selectedItemAddress,
-          )
-          setItem(instance);
-        } catch (error) {
-          console.log(error);
-        }
-      })();
+    if (itemManager) {
+      itemManager.events.ItemCreation().on("data", (event) => {
+        setItems(prev => [...prev, {
+          index: event.returnValues._itemIndex,
+          identifier: event.returnValues._identifier,
+          price: event.returnValues._price,
+          step: event.returnValues._step,
+          address: event.returnValues._itemAddress
+        }]);
+      })
     }
-  }, [web3, selectedItemAddress])
+  }, [itemManager]); // subscribe for ItemCreation event
 
-  const handleItemCreation = async () => {
+  const [item, setItem] = useState(null);
+  const [selectedItemAddress, setSelectedItemAddress] = useState(null);
+  useEffect(() => {
+    const changeSelectedItem = async () => {
+      try {
+        const instance = new web3.eth.Contract(
+          ItemContract.abi,
+          selectedItemAddress,
+        )
+        setItem(instance);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    if (web3 && selectedItemAddress) changeSelectedItem();
+  }, [web3, selectedItemAddress]) // change Item contract on selection
+
+
+  const handleItemCreationSubmit = async (event) => {
+    event.preventDefault();
     try {
         await itemManager.methods.createItem(itemIdentifier, itemCost).send({ from: accounts[0] });
     } catch (e) {
@@ -129,10 +132,15 @@ const App = () => {
         to: selectedItemAddress,
         value: value,
       })
-      await refreshItems();
+      fetchPreviousItems();
     } catch (error) {
       console.error(error);
     }
+  }
+
+  const handleItemChange = (event) => {
+    event.preventDefault();
+    setSelectedItemAddress(event.target.value)
   }
 
   return (
@@ -147,7 +155,7 @@ const App = () => {
       <h3>Add item:</h3>
       <p>(ItemManager <strong>owner only</strong>)</p>
       <AddItemForm
-        onSubmit={handleItemCreation}
+        handleItemCreationSubmit={handleItemCreationSubmit}
         setItemCost={setItemCost}
         itemCost={itemCost}
         setItemIdentifier={setItemIdentifier}
@@ -156,9 +164,9 @@ const App = () => {
       <h2>Items:</h2>
       <ItemTable
         items={items}
-        setSelectedItemAddress={setSelectedItemAddress}
+        handleItemChange={handleItemChange}
       />
-      {item &&  <button onClick={(e) => {handleItemPayment()}} >Pay</button>}
+      {item &&  <button onClick={() => {handleItemPayment()}} >Pay</button>}
     </div>
   );
 }

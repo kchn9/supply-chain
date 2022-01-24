@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from "react";
 
-const Item = ({ item, setSelectedItemAddress }) => {
+const Item = ({ item, handleItemChange }) => {
     if (item) {
         return (
             <tr>
                 <td>
-                    <input onChange={(e) => setSelectedItemAddress(e.target.value)} type="radio" id={item.identifier} name="selectItem" value={item.address} />
+                    <input onChange={(e) => handleItemChange(e)} type="radio" id={item.identifier} name="selectItem" value={item.address} />
                 </td>
                 <td>{item.index}</td>
                 <td>{item.identifier}</td>

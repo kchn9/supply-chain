@@ -1,7 +1,7 @@
-import React, { defaultProps, ReactPropTypes, useState, useEffect } from "react";
+import React from "react";
 import Item from "./Item/Item.jsx";
 
-const ItemList = ({ items, setSelectedItemAddress }) => {
+const ItemList = ({ items, handleItemChange }) => {
 
     if (!items) {
         return (null);
@@ -22,7 +22,7 @@ const ItemList = ({ items, setSelectedItemAddress }) => {
                 </thead>
                     <tbody>
                         {items.map(item => (
-                            <Item key={item.index} item={item} setSelectedItemAddress={setSelectedItemAddress} />
+                            <Item key={item.index} item={item} handleItemChange={handleItemChange} />
                         ))}
                     </tbody>
             </table>

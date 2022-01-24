@@ -1,14 +1,9 @@
 import React from "react";
 import Field from "./Field/Field.jsx";
 
-const AddItemForm = ({ onSubmit, setItemIdentifier, setItemCost, itemIdentifier, itemCost }) => {
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        onSubmit();
-    }
-
+const AddItemForm = ({ handleItemCreationSubmit, setItemIdentifier, setItemCost, itemIdentifier, itemCost }) => {
     return (
-        <form onSubmit={(e) => handleSubmit(e)} style={{display: "flex", flexDirection: "column", width: '50%', position: 'relative', left: "50%", transform: 'translateX(-50%)'}}>
+        <form onSubmit={(e) => handleItemCreationSubmit(e)} style={{display: "flex", flexDirection: "column", width: '50%', position: 'relative', left: "50%", transform: 'translateX(-50%)'}}>
             <Field
                 id='cost'
                 type='text'
@@ -26,7 +21,7 @@ const AddItemForm = ({ onSubmit, setItemIdentifier, setItemCost, itemIdentifier,
                 required
             />
 
-            <button type="submit" onClick={(e) => handleSubmit(e)}>
+            <button type="submit">
                 Create new item
             </button>
         </form>
