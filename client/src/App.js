@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import ItemTable from "./components/ItemTable/ItemTable";
-import AddItemForm from "./components/AddItemForm/AddItemForm"
+import AddItemForm from "./components/AddItemForm/AddItemForm";
 
 /**
  * Import web3 & contracts
@@ -9,9 +9,6 @@ import ItemManagerContract from "./contracts/ItemManager.json";
 import ItemContract from './contracts/Item.json';
 
 import getWeb3 from "./getWeb3";
-
-import "./App.css";
-
 
 const App = () => {
   const [itemCost, setItemCost] = useState('');
@@ -36,12 +33,26 @@ const App = () => {
       try {
         const accounts = await web3.eth.getAccounts();
         setAccounts(accounts);
+        setCurrentAccount(accounts[0]);
       } catch (error) {
         console.error(error)
       }
     }
     if (web3) fetchAccounts();
   }, [web3]) // init accounts
+
+  const [currentAccount, setCurrentAccount] = useState('');
+  useEffect(() => {
+    if (web3) {
+      if (window.ethereum) {
+        window.ethereum.on('accountsChanged', (accounts) => setCurrentAccount(web3.utils.toChecksumAddress(accounts[0])))
+      } else if (window.web3) {
+        window.web3.currentProvider.on('accountsChanged', (accounts) => setCurrentAccount(web3.utils.toChecksumAddress(accounts[0])))
+      } else {
+        console.log('Fallback to localhost detected - subscription to account change is being ignored now.')
+      }
+    }
+  }, [web3])
 
   const [itemManager, setItemManager] = useState(null);
   useEffect(() => {
@@ -58,6 +69,15 @@ const App = () => {
     }
     if (web3) createItemManager();
   }, [web3]); // init main contract
+
+  const [owner, setOwner] = useState('0x00');
+  useEffect(() => {
+    const getOwner = async () => {
+      const owner = await itemManager.methods.owner().call();
+      setOwner(owner);
+    }
+    if (web3 && itemManager) getOwner();
+  }, [web3, itemManager])
 
   const [items, setItems] = useState([]);
   const fetchPreviousItems = useCallback(async () => {
@@ -77,7 +97,7 @@ const App = () => {
       }
       setItems(prevItems);
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   }, [web3, itemManager])
   useEffect(() => {
@@ -108,65 +128,97 @@ const App = () => {
         )
         setItem(instance);
       } catch (error) {
-        console.log(error);
+        console.error(error);
       }
     }
     if (web3 && selectedItemAddress) changeSelectedItem();
   }, [web3, selectedItemAddress]) // change Item contract on selection
 
+  const [selectedItemIndex, setSelectedItemIndex] = useState(null);
+  useEffect(() => {
+    const getItemIndex = async () => {
+      const index = await item.methods.index().call();
+      setSelectedItemIndex(index);
+    }
+    if (item) getItemIndex();
+  }, [item])
 
   const handleItemCreationSubmit = async (event) => {
     event.preventDefault();
+    const from = currentAccount || accounts[0];
     try {
-        await itemManager.methods.createItem(itemIdentifier, itemCost).send({ from: accounts[0] });
+        await itemManager.methods.createItem(itemIdentifier, itemCost).send({ from: from });
     } catch (e) {
         console.error(e);
     }
   };
 
   const handleItemPayment = async () => {
+    const from = currentAccount || accounts[0];
     try {
       const value = await item.methods.priceInWei().call();
       await web3.eth.sendTransaction({
-        from: accounts[0],
+        from: from,
         to: selectedItemAddress,
         value: value,
       })
-      fetchPreviousItems();
     } catch (error) {
       console.error(error);
+    }
+    finally {
+      fetchPreviousItems();
+    }
+  }
+
+  const handleItemDelivery = async () => {
+    const from = currentAccount || accounts[0];
+    try {
+      await itemManager.methods.triggerDelivery(selectedItemIndex).send({ from: from });
+    } catch (error) {
+      console.error(error);
+    }
+    finally {
+      fetchPreviousItems();
     }
   }
 
   const handleItemChange = (event) => {
-    event.preventDefault();
     setSelectedItemAddress(event.target.value)
   }
 
   return (
-    <div className="App">
+    <div>
       <h1>Supply Chain Client</h1>
-      <h4>(with Event Trigger)</h4>
+      <i>(with Event Trigger)</i>
       {
         web3
           ? <p>Web3, accounts, contract connected</p>
           : <p>Loading Web3, accounts, and contract...</p>
       }
-      <h3>Add item:</h3>
-      <p>(ItemManager <strong>owner only</strong>)</p>
-      <AddItemForm
-        handleItemCreationSubmit={handleItemCreationSubmit}
-        setItemCost={setItemCost}
-        itemCost={itemCost}
-        setItemIdentifier={setItemIdentifier}
-        itemIdentifier={itemIdentifier}
-      />
+      {owner === currentAccount &&
+      <>
+        <h3>Add item:</h3>
+        <AddItemForm
+          handleItemCreationSubmit={handleItemCreationSubmit}
+          setItemCost={setItemCost}
+          itemCost={itemCost}
+          setItemIdentifier={setItemIdentifier}
+          itemIdentifier={itemIdentifier}
+        />
+      </>
+      }
       <h2>Items:</h2>
       <ItemTable
         items={items}
         handleItemChange={handleItemChange}
       />
-      {item &&  <button onClick={() => {handleItemPayment()}} >Pay</button>}
+      {item &&
+        <>
+          <h3>Item interaction:</h3>
+          <button onClick={() => {handleItemPayment()}} >Pay</button>
+          {owner === currentAccount && <button onClick={() => {handleItemDelivery()}}>Delivery</button>}
+        </>
+      }
     </div>
   );
 }

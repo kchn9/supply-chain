@@ -3,7 +3,7 @@ import Item from "./Item/Item.jsx";
 
 const ItemList = ({ items, handleItemChange }) => {
 
-    if (!items) {
+    if (items.length === 0) {
         return (null);
     }
 

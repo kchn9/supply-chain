@@ -5,7 +5,7 @@ import { ItemManager } from  "./ItemManager.sol";
 
 contract Item {
     ItemManager manager;
-    uint index;
+    uint public index;
     uint public priceInWei;
     uint weiPaid;
 
