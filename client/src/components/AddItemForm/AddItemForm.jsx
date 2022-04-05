@@ -3,7 +3,7 @@ import Field from "./Field/Field.jsx";
 
 const AddItemForm = ({ handleItemCreationSubmit, setItemIdentifier, setItemCost, itemIdentifier, itemCost }) => {
     return (
-        <form onSubmit={(e) => handleItemCreationSubmit(e)} style={{display: "flex", flexDirection: "column", width: '50%', position: 'relative', left: "50%", transform: 'translateX(-50%)'}}>
+        <form onSubmit={(e) => handleItemCreationSubmit(e)} >
             <Field
                 id='cost'
                 type='text'

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import ItemTable from "./components/ItemTable/ItemTable";
 import AddItemForm from "./components/AddItemForm/AddItemForm";
+import { Button, Grid, Typography, Stack } from "@mui/material/";
 
 /**
  * Import web3 & contracts
@@ -187,17 +188,28 @@ const App = () => {
   }
 
   return (
-    <div>
-      <h1>Supply Chain Client</h1>
-      <i>(with Event Trigger)</i>
+    <Grid
+      container
+      spacing={4}
+      justifyContent="center"
+    >
+      <Grid item xs={12}>
+        <Stack alignItems="center">
+          <Typography variant="h1">Supply Chain Client</Typography>
+        </Stack>
+      </Grid>
       {
         web3
-          ? <p>Web3, accounts, contract connected</p>
-          : <p>Loading Web3, accounts, and contract...</p>
+          ? (<Grid item xs={12}>
+              <Stack alignItems="center">
+                <Typography variant="subtitle1">Web3, accounts, contract connected</Typography>
+              </Stack>
+            </Grid>)
+          : (<Grid item xs={12}> <Typography variant="subtitle1">Loading Web3, accounts, and contract... Please make sure your gateway is connected.</Typography> </Grid>)
       }
       {owner === currentAccount &&
-      <>
-        <h3>Add item:</h3>
+      <Grid item xs={2}>
+        <Typography variant="h4">Add item:</Typography>
         <AddItemForm
           handleItemCreationSubmit={handleItemCreationSubmit}
           setItemCost={setItemCost}
@@ -205,21 +217,27 @@ const App = () => {
           setItemIdentifier={setItemIdentifier}
           itemIdentifier={itemIdentifier}
         />
-      </>
+      </Grid>
       }
-      <h2>Items:</h2>
-      <ItemTable
-        items={items}
-        handleItemChange={handleItemChange}
-      />
+      <Grid item xs={8}>
+        <Typography variant="h4">Items:</Typography>
+        <ItemTable
+          items={items}
+          handleItemChange={handleItemChange}
+        />
+      </Grid>
       {item &&
         <>
-          <h3>Item interaction:</h3>
-          <button onClick={() => {handleItemPayment()}} >Pay</button>
-          {owner === currentAccount && <button onClick={() => {handleItemDelivery()}}>Delivery</button>}
+          <Grid item xs={4}>
+            <Typography variant="h4">Item interaction:</Typography>
+            <Button variant="contained" onClick={() => {handleItemPayment()}}>
+              Pay
+            </Button>
+          {owner === currentAccount && <Button variant="contained" onClick={() => {handleItemDelivery()}}>Delivery</Button>}
+          </Grid>
         </>
       }
-    </div>
+    </Grid>
   );
 }
 
