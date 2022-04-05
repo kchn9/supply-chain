@@ -28,6 +28,7 @@ const App = () => {
     initializeWeb3();
   }, []) // init web3
 
+  /*
   const [accounts, setAccounts] = useState(null);
   useEffect(() => {
     const fetchAccounts = async () => {
@@ -41,12 +42,16 @@ const App = () => {
     }
     if (web3) fetchAccounts();
   }, [web3]) // init accounts
+  */
 
   const [currentAccount, setCurrentAccount] = useState('');
   useEffect(() => {
     if (web3) {
       if (window.ethereum) {
-        window.ethereum.on('accountsChanged', (accounts) => setCurrentAccount(web3.utils.toChecksumAddress(accounts[0])))
+        window.ethereum.on('accountsChanged', (accounts) => {
+          console.log(accounts);
+          setCurrentAccount(web3.utils.toChecksumAddress(accounts[0]))
+        })
       } else if (window.web3) {
         window.web3.currentProvider.on('accountsChanged', (accounts) => setCurrentAccount(web3.utils.toChecksumAddress(accounts[0])))
       } else {
@@ -106,7 +111,7 @@ const App = () => {
   }, [itemManager, fetchPreviousItems]) // fetch previous items
   useEffect(() => {
     if (itemManager) {
-      itemManager.events.ItemCreation().on("data", (event) => {
+      itemManager.events.ItemCreation().on("data", event => {
         setItems(prev => [...prev, {
           index: event.returnValues._itemIndex,
           identifier: event.returnValues._identifier,
@@ -115,8 +120,14 @@ const App = () => {
           address: event.returnValues._itemAddress
         }]);
       })
+      itemManager.events.ItemPaid().on("data", event => {
+        console.log(`Item of ID: ${event.returnValues._itemIndex} at address ${event.returnValues._itemAddress} has been paid for.`)
+      });
+      itemManager.events.ItemDelivery().on("data", event => {
+        console.log(`Item of ID: ${event.returnValues._itemIndex} at address ${event.returnValues._itemAddress} is being delivered now.`)
+      });
     }
-  }, [itemManager]); // subscribe for ItemCreation event
+  }, [itemManager]); // subscribe for ItemCreation event - event trigger
 
   const [item, setItem] = useState(null);
   const [selectedItemAddress, setSelectedItemAddress] = useState(null);
