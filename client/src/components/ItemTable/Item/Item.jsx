@@ -1,18 +1,19 @@
 import React, { useEffect, useRef } from "react";
+import { TableRow, TableCell } from "@mui/material";
 
 const Item = ({ item, handleItemChange }) => {
     if (item) {
         return (
-            <tr>
-                <td>
+            <TableRow sx={{ '&:last-child td, &:last-child th': { border: 0 }}} >
+                <TableCell align="center">
                     <input onChange={(e) => handleItemChange(e)} type="radio" id={item.identifier} name="selectItem" value={item.address} />
-                </td>
-                <td>{item.index}</td>
-                <td>{item.identifier}</td>
-                <td>{item.price}</td>
-                <td><StepIcon step={item.step} /></td>
-                <td>{item.address}</td>
-            </tr>
+                </TableCell>
+                <TableCell align="center">{item.index}</TableCell>
+                <TableCell align="center">{item.identifier}</TableCell>
+                <TableCell align="center">{item.price}</TableCell>
+                <TableCell align="center"><StepIcon step={item.step} /></TableCell>
+                <TableCell align="center">{item.address}</TableCell>
+            </TableRow>
         )
     } else {
         return (null);

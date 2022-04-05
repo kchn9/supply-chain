@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import ItemTable from "./components/ItemTable/ItemTable";
 import AddItemForm from "./components/AddItemForm/AddItemForm";
-import { Button, Grid, Typography, Stack } from "@mui/material/";
+import { Button, Grid, Typography, Stack, Divider, Box, Container } from "@mui/material/";
 
 /**
  * Import web3 & contracts
@@ -131,7 +131,7 @@ const App = () => {
       } catch (error) {
         console.error(error);
       }
-    }
+    } 
     if (web3 && selectedItemAddress) changeSelectedItem();
   }, [web3, selectedItemAddress]) // change Item contract on selection
 
@@ -146,7 +146,7 @@ const App = () => {
 
   const handleItemCreationSubmit = async (event) => {
     event.preventDefault();
-    const from = currentAccount || accounts[0];
+    const from = currentAccount;
     try {
         await itemManager.methods.createItem(itemIdentifier, itemCost).send({ from: from });
     } catch (e) {
@@ -155,7 +155,7 @@ const App = () => {
   };
 
   const handleItemPayment = async () => {
-    const from = currentAccount || accounts[0];
+    const from = currentAccount;
     try {
       const value = await item.methods.priceInWei().call();
       await web3.eth.sendTransaction({
@@ -172,7 +172,7 @@ const App = () => {
   }
 
   const handleItemDelivery = async () => {
-    const from = currentAccount || accounts[0];
+    const from = currentAccount;
     try {
       await itemManager.methods.triggerDelivery(selectedItemIndex).send({ from: from });
     } catch (error) {
@@ -192,51 +192,61 @@ const App = () => {
       container
       spacing={4}
       justifyContent="center"
+      padding={"0 32px"}
+
     >
       <Grid item xs={12}>
-        <Stack alignItems="center">
-          <Typography variant="h1">Supply Chain Client</Typography>
+        <Typography variant="h2" component="h1" paddingTop="48px" align="center">
+          Supply Chain Client
+        </Typography>
+      </Grid>
+      <Grid item xs={12}>
+      {
+      web3
+        ? (
+          currentAccount !== "" ? <Typography align="center" variant="subtitle1">Connected succefully</Typography> :
+            <Typography align="center" variant="subtitle1">Web3 detected - make sure to connect your account</Typography> 
+          )
+        : (<Grid item xs={12}> <Typography align="center" variant="subtitle1">Loading Web3, accounts, and contract... Please make sure your gateway is connected.</Typography> </Grid>)
+      }
+      </Grid>
+      <Grid item>
+        <Stack boxShadow={"#5f5f5f50 12px 12px 54px"} padding={2}>
+          <Stack direction={"row"} marginBottom={2}>
+          {owner === currentAccount &&
+            <Container>
+              <Typography variant="h5" component={"h2"}>Add item:</Typography>
+              <AddItemForm
+                handleItemCreationSubmit={handleItemCreationSubmit}
+                setItemCost={setItemCost}
+                itemCost={itemCost}
+                setItemIdentifier={setItemIdentifier}
+                itemIdentifier={itemIdentifier}
+              />
+            </Container>
+          }
+          {item &&
+            <Container>
+              <Typography variant="h5" component={"h2"}>Item interaction:</Typography>
+              <Stack spacing={4} height={"calc(100% - 64px)"} justifyContent={"center"}>
+                <Button variant="contained" fullWidth onClick={() => {handleItemPayment()}}>
+                  Pay
+                </Button>
+                {owner === currentAccount && <Button variant="contained" fullWidth onClick={() => {handleItemDelivery()}}>Delivery</Button>}
+              </Stack>
+            </Container>
+          }
+          </Stack>
+        {items.length && <Divider variant="middle"/>}
+          <Box >
+            {items.length ? <Typography variant="h4" component={"h2"} align="center" marginTop={2} gutterBottom>Items:</Typography> : <Typography variant="body1" color={"gray"} marginBottom={2}>There is nothing to show.</Typography>}
+            <ItemTable
+              items={items}
+              handleItemChange={handleItemChange}
+            />
+          </Box>
         </Stack>
       </Grid>
-      {
-        web3
-          ? (<Grid item xs={12}>
-              <Stack alignItems="center">
-                <Typography variant="subtitle1">Web3, accounts, contract connected</Typography>
-              </Stack>
-            </Grid>)
-          : (<Grid item xs={12}> <Typography variant="subtitle1">Loading Web3, accounts, and contract... Please make sure your gateway is connected.</Typography> </Grid>)
-      }
-      {owner === currentAccount &&
-      <Grid item xs={2}>
-        <Typography variant="h4">Add item:</Typography>
-        <AddItemForm
-          handleItemCreationSubmit={handleItemCreationSubmit}
-          setItemCost={setItemCost}
-          itemCost={itemCost}
-          setItemIdentifier={setItemIdentifier}
-          itemIdentifier={itemIdentifier}
-        />
-      </Grid>
-      }
-      <Grid item xs={8}>
-        <Typography variant="h4">Items:</Typography>
-        <ItemTable
-          items={items}
-          handleItemChange={handleItemChange}
-        />
-      </Grid>
-      {item &&
-        <>
-          <Grid item xs={4}>
-            <Typography variant="h4">Item interaction:</Typography>
-            <Button variant="contained" onClick={() => {handleItemPayment()}}>
-              Pay
-            </Button>
-          {owner === currentAccount && <Button variant="contained" onClick={() => {handleItemDelivery()}}>Delivery</Button>}
-          </Grid>
-        </>
-      }
     </Grid>
   );
 }
