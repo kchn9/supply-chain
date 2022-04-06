@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import ItemTable from "./components/ItemTable/ItemTable";
 import AddItemForm from "./components/AddItemForm/AddItemForm";
 import { Button, Grid, Typography, Stack, Divider, Box, Container } from "@mui/material/";
+import Jazzicon, { jsNumberForAddress } from 'react-jazzicon';
 
 /**
  * Import web3 & contracts
@@ -28,13 +29,12 @@ const App = () => {
     initializeWeb3();
   }, []) // init web3
 
-  const [accounts, setAccounts] = useState(null);
+  const [currentAccount, setCurrentAccount] = useState('');
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const accounts = await web3.eth.getAccounts();
-        setAccounts(accounts);
-        setCurrentAccount(accounts[0]);
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        setCurrentAccount(web3.utils.toChecksumAddress(accounts[0]));
       } catch (error) {
         console.error(error)
       }
@@ -42,11 +42,12 @@ const App = () => {
     if (web3) fetchAccounts();
   }, [web3]) // init accounts
 
-  const [currentAccount, setCurrentAccount] = useState('');
   useEffect(() => {
     if (web3) {
       if (window.ethereum) {
-        window.ethereum.on('accountsChanged', (accounts) => setCurrentAccount(web3.utils.toChecksumAddress(accounts[0])))
+        window.ethereum.on('accountsChanged', (accounts) => {
+          setCurrentAccount(web3.utils.toChecksumAddress(accounts[0]))
+        })
       } else if (window.web3) {
         window.web3.currentProvider.on('accountsChanged', (accounts) => setCurrentAccount(web3.utils.toChecksumAddress(accounts[0])))
       } else {
@@ -106,7 +107,7 @@ const App = () => {
   }, [itemManager, fetchPreviousItems]) // fetch previous items
   useEffect(() => {
     if (itemManager) {
-      itemManager.events.ItemCreation().on("data", (event) => {
+      itemManager.events.ItemCreation().on("data", event => {
         setItems(prev => [...prev, {
           index: event.returnValues._itemIndex,
           identifier: event.returnValues._identifier,
@@ -115,8 +116,14 @@ const App = () => {
           address: event.returnValues._itemAddress
         }]);
       })
+      itemManager.events.ItemPaid().on("data", event => {
+        console.log(`Item of ID: ${event.returnValues._itemIndex} at address ${event.returnValues._itemAddress} has been paid for.`)
+      });
+      itemManager.events.ItemDelivery().on("data", event => {
+        console.log(`Item of ID: ${event.returnValues._itemIndex} at address ${event.returnValues._itemAddress} is being delivered now.`)
+      });
     }
-  }, [itemManager]); // subscribe for ItemCreation event
+  }, [itemManager]); // subscribe for ItemCreation event - event trigger
 
   const [item, setItem] = useState(null);
   const [selectedItemAddress, setSelectedItemAddress] = useState(null);
@@ -204,15 +211,21 @@ const App = () => {
       {
       web3
         ? (
-          currentAccount !== "" ? <Typography align="center" variant="subtitle1">Connected succefully</Typography> :
-            <Typography align="center" variant="subtitle1">Web3 detected - make sure to connect your account</Typography> 
+          currentAccount !== "" ? 
+            (
+              <Stack direction={"row"} justifyContent={"center"} alignItems={"center"}>
+                <Typography align="center" variant="body1" paddingLeft={1} paddingRight={1}>Connected succefully to address {currentAccount}</Typography>
+                <Jazzicon diameter={30} seed={jsNumberForAddress(currentAccount)} />
+              </Stack>
+            ) 
+            : <Typography align="center" variant="body1">Web3 detected - make sure to connect your account</Typography> 
           )
-        : (<Grid item xs={12}> <Typography align="center" variant="subtitle1">Loading Web3, accounts, and contract... Please make sure your gateway is connected.</Typography> </Grid>)
+        : (<Grid item xs={12}> <Typography align="center" variant="body1">Loading Web3, accounts, and contract... Please make sure your gateway is connected.</Typography> </Grid>)
       }
       </Grid>
       <Grid item>
-        <Stack boxShadow={"#5f5f5f50 12px 12px 54px"} padding={2}>
-          <Stack direction={"row"} marginBottom={2}>
+        <Stack boxShadow={"#5f5f5f50 12px 12px 54px"} padding={2} marginBottom={8}>
+          <Stack direction={"row"} marginBottom={2} justifyContent="center">
           {owner === currentAccount &&
             <Container>
               <Typography variant="h5" component={"h2"}>Add item:</Typography>
@@ -225,19 +238,22 @@ const App = () => {
               />
             </Container>
           }
-          {item &&
             <Container>
-              <Typography variant="h5" component={"h2"}>Item interaction:</Typography>
-              <Stack spacing={4} height={"calc(100% - 64px)"} justifyContent={"center"}>
-                <Button variant="contained" fullWidth onClick={() => {handleItemPayment()}}>
-                  Pay
-                </Button>
-                {owner === currentAccount && <Button variant="contained" fullWidth onClick={() => {handleItemDelivery()}}>Delivery</Button>}
-              </Stack>
+            {item ? (
+              <>
+                <Typography variant="h5" component={"h2"}>Item actions:</Typography>
+                <Stack spacing={4} maxWidth="60%" minHeight={"100px"} height={"calc(100% - 64px)"} justifyContent="center">
+                  <Button variant="contained" onClick={() => {handleItemPayment()}}>
+                    Pay
+                  </Button>
+                  {owner === currentAccount && <Button variant="contained" fullWidth onClick={() => {handleItemDelivery()}}>Delivery</Button>}
+                </Stack>
+              </>
+                ) : <Typography align="center" variant="body1">Select item to perform any action.</Typography>
+            }
             </Container>
-          }
           </Stack>
-        {items.length && <Divider variant="middle"/>}
+          <Divider variant="middle"/>
           <Box >
             {items.length ? <Typography variant="h4" component={"h2"} align="center" marginTop={2} gutterBottom>Items:</Typography> : <Typography variant="body1" color={"gray"} marginBottom={2}>There is nothing to show.</Typography>}
             <ItemTable
