@@ -344,7 +344,7 @@ const App = () => {
                 Items:
               </Typography>
             ) : (
-              <Typography variant="body1" color={"gray"} marginBottom={2}>
+              <Typography align="center" variant="body1" color={"gray"} margin={"32px 0"}>
                 There is nothing to show.
               </Typography>
             )}
